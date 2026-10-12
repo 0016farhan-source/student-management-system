@@ -138,7 +138,7 @@ try {
 
     $connection = database_connection();
     $activeYear = $connection->query(
-        'SELECT id, name FROM academic_years WHERE is_active = 1 ORDER BY id DESC LIMIT 1'
+        'SELECT id, name, starts_on, ends_on FROM academic_years WHERE is_active = 1 ORDER BY id DESC LIMIT 1'
     )->fetch() ?: null;
     $categories = $connection->query('SELECT id, name, description FROM fee_categories ORDER BY name')->fetchAll();
     $classes = $connection->query('SELECT id, name FROM classes ORDER BY grade_level, name')->fetchAll();
