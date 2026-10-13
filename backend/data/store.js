@@ -5,7 +5,7 @@ const users = [
     id: 1,
     name: 'System Admin',
     email: 'admin@school.com',
-    password: bcrypt.hashSync('admin123', 10),
+    password: bcrypt.hashSync('123456', 10),
     role: 'admin',
   },
 ];

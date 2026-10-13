@@ -27,6 +27,6 @@ Open the `Local` URL Vite prints (usually `http://localhost:5173`). If that port
 ## Demo sign in
 
 - Email: `admin@school.com`
-- Password: `admin123`
+- Password: `123456`
 
 The API currently keeps its demo records in memory. Records reset when the API server restarts. MySQL settings in `backend/.env` are not required for this demo API.
