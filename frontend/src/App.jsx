@@ -17,7 +17,7 @@ import './App.css';
 import './Dashboard.css';
 import schoolHero from './assets/school-hero.jpg';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 const CURRENT_YEAR = new Date().getFullYear();
 const singularLabels = {
   Overview: 'Student',
@@ -348,13 +348,18 @@ function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: loginEmail, password: loginPassword }),
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || 'Could not sign in.');
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.message || `Sign in failed (HTTP ${response.status}). Check that the backend is running.`);
+      }
       sessionStorage.setItem('student-desk-token', data.token);
       setCurrentUser(data.user);
       setToken(data.token);
     } catch (error) {
-      setRequestError(error instanceof Error ? error.message : 'Could not connect to the server.');
+      const message = error instanceof Error ? error.message : '';
+      setRequestError(/fetch|network|json/i.test(message)
+        ? 'Cannot reach the backend. Open another terminal, run “cd backend” and “npm start”, then try again.'
+        : message || 'Could not connect to the server.');
     } finally {
       setLoginLoading(false);
     }
