@@ -886,6 +886,22 @@ tbody tr:hover {
   color: #d2e7f7;
 }
 
+.demo-fill-btn {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #64d7f2;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.demo-fill-btn:hover {
+  color: #b2f1ff;
+}
+
 .login-error {
   color: #ff9b9b;
 }

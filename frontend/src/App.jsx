@@ -642,7 +642,20 @@ function App() {
             {requestError && <p className="login-error" role="alert">{requestError}</p>}
             <button className="primary-btn" type="submit" disabled={loginLoading}>{loginLoading ? 'Signing in…' : 'Sign in'}</button>
           </form>
-          <p className="demo-hint">Enter your account details to continue.</p>
+          <p className="demo-hint">
+            Demo account:{' '}
+            <button
+              type="button"
+              className="demo-fill-btn"
+              onClick={() => {
+                setLoginEmail('admin@school.com');
+                setLoginPassword('123456');
+                setRequestError('');
+              }}
+            >
+              Use demo account
+            </button>
+          </p>
         </section>
       </main>
     );
