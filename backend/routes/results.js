@@ -1,5 +1,5 @@
 const express = require('express');
-const { results } = require('../data/store');
+const { results, nextResultId } = require('../data/store');
 const { authenticate } = require('../middleware/auth');
 
 const router = express.Router();
@@ -17,7 +17,7 @@ router.post('/', authenticate, (req, res) => {
 
   const grade = score >= 90 ? 'A+' : score >= 80 ? 'A' : score >= 70 ? 'B' : score >= 60 ? 'C' : 'D';
   const entry = {
-    id: results.length ? results[results.length - 1].id + 1 : 1,
+    id: nextResultId(),
     studentId,
     studentName,
     subject,

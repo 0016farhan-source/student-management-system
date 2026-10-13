@@ -1,5 +1,5 @@
 const express = require('express');
-const { attendance } = require('../data/store');
+const { attendance, nextAttendanceId } = require('../data/store');
 const { authenticate } = require('../middleware/auth');
 
 const router = express.Router();
@@ -16,7 +16,7 @@ router.post('/', authenticate, (req, res) => {
   }
 
   const record = {
-    id: attendance.length ? attendance[attendance.length - 1].id + 1 : 1,
+    id: nextAttendanceId(),
     studentId,
     studentName,
     className: className || 'General',

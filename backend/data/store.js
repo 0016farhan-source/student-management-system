@@ -75,8 +75,27 @@ const fees = [
   { id: 3, studentId: 3, studentName: 'Mehedi Hasan', amount: 12000, paid: 3000, status: 'Pending' },
 ];
 
-const nextStudentId = () => students.reduce((max, student) => Math.max(max, student.id), 0) + 1;
-const nextTeacherId = () => teachers.reduce((max, teacher) => Math.max(max, teacher.id), 0) + 1;
+const nextIds = {
+  student: students.reduce((max, student) => Math.max(max, Number(student.id) || 0), 0) + 1,
+  teacher: teachers.reduce((max, teacher) => Math.max(max, Number(teacher.id) || 0), 0) + 1,
+  attendance: attendance.reduce((max, record) => Math.max(max, Number(record.id) || 0), 0) + 1,
+  result: results.reduce((max, result) => Math.max(max, Number(result.id) || 0), 0) + 1,
+  fee: fees.reduce((max, fee) => Math.max(max, Number(fee.id) || 0), 0) + 1,
+};
+
+const nextId = (key, records) => {
+  const maxId = records.reduce((max, record) => Math.max(max, Number(record.id) || 0), 0);
+  nextIds[key] = Math.max(nextIds[key] || 1, maxId + 1);
+  const nextValue = nextIds[key];
+  nextIds[key] += 1;
+  return nextValue;
+};
+
+const nextStudentId = () => nextId('student', students);
+const nextTeacherId = () => nextId('teacher', teachers);
+const nextAttendanceId = () => nextId('attendance', attendance);
+const nextResultId = () => nextId('result', results);
+const nextFeeId = () => nextId('fee', fees);
 
 module.exports = {
   users,
@@ -87,4 +106,7 @@ module.exports = {
   fees,
   nextStudentId,
   nextTeacherId,
+  nextAttendanceId,
+  nextResultId,
+  nextFeeId,
 };

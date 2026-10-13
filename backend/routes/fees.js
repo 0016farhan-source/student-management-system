@@ -1,5 +1,5 @@
 const express = require('express');
-const { fees } = require('../data/store');
+const { fees, nextFeeId } = require('../data/store');
 const { authenticate } = require('../middleware/auth');
 
 const router = express.Router();
@@ -17,7 +17,7 @@ router.post('/', authenticate, (req, res) => {
 
   const status = paid >= amount ? 'Paid' : paid > 0 ? 'Partial' : 'Pending';
   const entry = {
-    id: fees.length ? fees[fees.length - 1].id + 1 : 1,
+    id: nextFeeId(),
     studentId,
     studentName,
     amount,
