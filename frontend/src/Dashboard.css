@@ -491,6 +491,22 @@
   font-size: 0.65rem;
 }
 
+.filter-reset-btn {
+  flex: 0 0 auto;
+  padding: 7px 10px;
+  border: 1px solid rgba(72, 199, 233, 0.22);
+  border-radius: 8px;
+  background: rgba(8, 125, 181, 0.12);
+  color: #72d9f2;
+  font-size: 0.66rem;
+  cursor: pointer;
+}
+
+.filter-reset-btn:hover {
+  background: rgba(8, 125, 181, 0.24);
+  color: #b2f1ff;
+}
+
 .filter-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

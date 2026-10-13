@@ -2,12 +2,9 @@
 import {
   Bell,
   BookOpen,
-  Building2,
   ChevronDown,
-  ArrowUpRight,
   GraduationCap,
   LayoutDashboard,
-  LockKeyhole,
   LogOut,
   Menu,
   Search,
@@ -21,7 +18,6 @@ import './Dashboard.css';
 import schoolHero from './assets/school-hero.jpg';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-const PHP_PORTAL_URL = import.meta.env.VITE_PHP_PORTAL_URL || 'http://localhost:8000';
 const CURRENT_YEAR = new Date().getFullYear();
 const singularLabels = {
   Overview: 'Student',
@@ -74,7 +70,7 @@ const sidebarItems = [
   { label: 'Fees', title: 'Fees', icon: ChartNoAxesColumn },
 ];
 
-const academicFilters = ['School', 'Programme', 'Session', 'Department', 'Option', 'Semester'];
+const emptyAcademicFilters = { className: '', session: '', subject: '', grade: '', attendance: '', status: '' };
 
 function Sidebar({ activeTab, onNavigate, userName, userRole, isOpen, onClose }) {
   return (
@@ -128,7 +124,6 @@ function Header({
   onLogout,
   onAdd,
   onMenu,
-  isPreview = false,
 }) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
@@ -145,15 +140,9 @@ function Header({
           <h1>School Management System</h1>
           <p className="page-caption">A Great Place For Education</p>
         </div>
-      </div>
+        </div>
 
       <div className="topbar-actions">
-        {isPreview ? (
-          <a className="primary-btn add-record-btn preview-signin-link" href={`${PHP_PORTAL_URL}/login.php`}>
-            Sign in to school portal <ArrowUpRight size={14} aria-hidden="true" />
-          </a>
-        ) : (
-          <>
         <form className="global-search" onSubmit={onSearchSubmit} role="search">
           <Search size={17} aria-hidden="true" />
           <input
@@ -208,8 +197,6 @@ function Header({
         <button type="button" className="primary-btn add-record-btn" onClick={onAdd}>
           <span aria-hidden="true">+</span> Add {singularLabels[activeTab]}
         </button>
-          </>
-        )}
       </div>
     </header>
   );
@@ -233,14 +220,15 @@ function HeroBanner({ userName }) {
   );
 }
 
-function FilterField({ label }) {
-  const fieldId = `academic-filter-${label.toLowerCase()}`;
+function FilterField({ label, value, options, onChange }) {
+  const fieldId = `academic-filter-${label.toLowerCase().replaceAll(' ', '-')}`;
   return (
     <label className="filter-field" htmlFor={fieldId}>
-      <span>{label}<b aria-hidden="true">*</b></span>
+      <span>{label}</span>
       <div className="filter-select-wrap">
-        <select id={fieldId} disabled aria-describedby="filter-catalog-note" defaultValue="">
-          <option value="">Select an item</option>
+        <select id={fieldId} value={value} onChange={onChange}>
+        <option value="">{label === 'Class' ? 'All classes' : `All ${label.toLowerCase()}s`}</option>
+          {options.map((option) => <option key={option} value={option}>{option}</option>)}
         </select>
         <ChevronDown size={16} aria-hidden="true" />
       </div>
@@ -258,9 +246,12 @@ function App() {
   const [dashboard, setDashboard] = useState({ students: 0, teachers: 0, activeStudents: 0, presentToday: 0, totalCollection: 0, averageScore: 0 });
   const [token, setToken] = useState(() => sessionStorage.getItem('student-desk-token') || '');
   const [loading, setLoading] = useState(() => Boolean(sessionStorage.getItem('student-desk-token')));
+  const [loginEmail, setLoginEmail] = useState('admin@school.com');
+  const [loginPassword, setLoginPassword] = useState('admin123');
+  const [loginLoading, setLoginLoading] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [form, setForm] = useState(initialForm);
-  const [currentUser] = useState({ name: 'Administrator', role: 'admin' });
+  const [currentUser, setCurrentUser] = useState({ name: 'Administrator', role: 'admin' });
   const [searchTerm, setSearchTerm] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [moduleForm, setModuleForm] = useState({});
@@ -268,6 +259,7 @@ function App() {
   const [requestError, setRequestError] = useState('');
   const [saving, setSaving] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [academicFilters, setAcademicFilters] = useState(emptyAcademicFilters);
   const authHeaders = useMemo(
     () => ({
       'Content-Type': 'application/json',
@@ -342,7 +334,30 @@ function App() {
   const handleLogout = () => {
     sessionStorage.removeItem('student-desk-token');
     setToken('');
+    setCurrentUser({ name: 'Administrator', role: 'admin' });
     setActiveTab('Overview');
+  };
+
+  const handleLogin = async (event) => {
+    event.preventDefault();
+    setLoginLoading(true);
+    setRequestError('');
+    try {
+      const response = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: loginEmail, password: loginPassword }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Could not sign in.');
+      sessionStorage.setItem('student-desk-token', data.token);
+      setCurrentUser(data.user);
+      setToken(data.token);
+    } catch (error) {
+      setRequestError(error instanceof Error ? error.message : 'Could not connect to the server.');
+    } finally {
+      setLoginLoading(false);
+    }
   };
 
   const handleAddClick = () => {
@@ -563,77 +578,73 @@ function App() {
     event.preventDefault();
     setActiveTab('Students');
   };
-  const attendancePresent = attendance.filter((record) => record.status === 'Present').length;
-  const attendancePercent = attendance.length
-    ? Math.round((attendancePresent / attendance.length) * 100)
+  const filterOptions = {
+    className: [...new Set(students.map((student) => student.className).filter(Boolean))].sort(),
+    session: [...new Set(attendance.map((record) => record.date?.slice(0, 4)).filter(Boolean))].sort().reverse(),
+    subject: [...new Set(results.map((result) => result.subject).filter(Boolean))].sort(),
+    grade: [...new Set(results.map((result) => result.grade).filter(Boolean))].sort(),
+    attendance: [...new Set(attendance.map((record) => record.status).filter(Boolean))].sort(),
+    status: [...new Set(students.map((student) => student.status).filter(Boolean))].sort(),
+  };
+  const academicResults = results.filter((result) =>
+    (!academicFilters.subject || result.subject === academicFilters.subject)
+    && (!academicFilters.grade || result.grade === academicFilters.grade)
+  );
+  const selectedResultStudentIds = new Set(academicResults.map((result) => result.studentId));
+  const hasResultFilter = Boolean(academicFilters.subject || academicFilters.grade);
+  const academicAttendance = attendance.filter((record) =>
+    (!academicFilters.session || record.date?.startsWith(academicFilters.session))
+    && (!academicFilters.attendance || record.status === academicFilters.attendance)
+    && (!hasResultFilter || selectedResultStudentIds.has(record.studentId))
+    && (!academicFilters.className || students.some((student) => student.id === record.studentId && student.className === academicFilters.className))
+    && (!academicFilters.status || students.some((student) => student.id === record.studentId && student.status === academicFilters.status))
+  );
+  const hasAttendanceFilter = Boolean(academicFilters.session || academicFilters.attendance);
+  const academicStudentIds = new Set(academicAttendance.map((record) => record.studentId));
+  const academicStudents = students.filter((student) =>
+    (!academicFilters.className || student.className === academicFilters.className)
+    && (!academicFilters.status || student.status === academicFilters.status)
+    && (!hasResultFilter || selectedResultStudentIds.has(student.id))
+    && (!hasAttendanceFilter || academicStudentIds.has(student.id))
+  );
+  const academicStudentIdsFiltered = new Set(academicStudents.map((student) => student.id));
+  const visibleAcademicResults = academicResults.filter((result) => academicStudentIdsFiltered.has(result.studentId));
+  const academicTeachers = academicFilters.subject
+    ? teachers.filter((teacher) => teacher.subject === academicFilters.subject)
+    : teachers;
+  const academicFees = fees.filter((fee) => academicStudentIdsFiltered.has(fee.studentId));
+  const attendancePresent = academicAttendance.filter((record) => record.status === 'Present').length;
+  const attendancePercent = academicAttendance.length
+    ? Math.round((attendancePresent / academicAttendance.length) * 100)
     : 0;
   const classBreakdown = Object.entries(
-    students.reduce((groups, student) => {
+    academicStudents.reduce((groups, student) => {
       groups[student.className] = (groups[student.className] || 0) + 1;
       return groups;
     }, {})
   ).sort((left, right) => right[1] - left[1]).slice(0, 5);
-  const dueFees = fees.reduce((total, fee) => total + Math.max(0, fee.amount - fee.paid), 0);
+  const dueFees = academicFees.reduce((total, fee) => total + Math.max(0, fee.amount - fee.paid), 0);
+  const academicAverageScore = visibleAcademicResults.length
+    ? Number((visibleAcademicResults.reduce((sum, result) => sum + result.score, 0) / visibleAcademicResults.length).toFixed(1))
+    : 0;
   if (!token) {
-    const previewUser = { name: 'Preview mode', role: 'read-only' };
     return (
-      <div className="dashboard-shell">
-        <Sidebar
-          activeTab={activeTab}
-          onNavigate={setActiveTab}
-          userName={previewUser.name}
-          userRole={previewUser.role}
-          isOpen={mobileMenuOpen}
-          onClose={() => setMobileMenuOpen(false)}
-        />
-        <main className="main-panel">
-          <Header
-            activeTab={activeTab}
-            userName={previewUser.name}
-            isPreview
-            onMenu={() => setMobileMenuOpen(true)}
-          />
-          {activeTab === 'Overview' ? (
-            <>
-              <HeroBanner />
-              <section className="academic-filters" aria-labelledby="filter-title">
-                <div className="filter-heading">
-                  <div>
-                    <h2 id="filter-title">Academic filters</h2>
-                    <p id="filter-catalog-note">Sign in and configure academic records to enable these filters.</p>
-                  </div>
-                  <Building2 size={19} aria-hidden="true" />
-                </div>
-                <div className="filter-grid">
-                  {academicFilters.map((label) => <FilterField key={label} label={label} />)}
-                </div>
-              </section>
-              <section className="preview-access-card" aria-labelledby="preview-access-title">
-                <div className="preview-lock-icon"><LockKeyhole size={20} aria-hidden="true" /></div>
-                <div className="preview-access-copy">
-                  <h2 id="preview-access-title">Live school data is protected</h2>
-                  <p>This is a design preview. Sign in to the PHP/MySQL portal to view real records and use school management features. No sample students or statistics are shown here.</p>
-                </div>
-                <a className="primary-btn preview-access-link" href={`${PHP_PORTAL_URL}/login.php`}>
-                  Open secure sign in <ArrowUpRight size={15} aria-hidden="true" />
-                </a>
-              </section>
-            </>
-          ) : (
-            <section className="preview-access-card preview-module-gate" role="status">
-              <div className="preview-lock-icon"><LockKeyhole size={20} aria-hidden="true" /></div>
-              <div className="preview-access-copy">
-                <h2>Sign in to access {activeTab.toLowerCase()}</h2>
-                <p>The dashboard preview does not load school records. Sign in through the secure portal to work with live data.</p>
-              </div>
-              <a className="primary-btn preview-access-link" href={`${PHP_PORTAL_URL}/login.php`}>
-                Open secure sign in <ArrowUpRight size={15} aria-hidden="true" />
-              </a>
-            </section>
-          )}
-        </main>
-        <footer className="frontend-copyright">Copyright © {CURRENT_YEAR} Farhan Ahmed</footer>
-      </div>
+      <main className="login-page">
+        <section className="login-card" aria-labelledby="login-title">
+          <div className="login-brand">
+            <div className="login-icon"><GraduationCap size={24} aria-hidden="true" /></div>
+            <div><p className="eyebrow">School Portal</p><h1 id="login-title">Student Desk</h1></div>
+          </div>
+          <div className="form-header"><h2>Welcome back</h2><p>Sign in to manage your school.</p></div>
+          <form className="login-form" onSubmit={handleLogin}>
+            <label>Email<input type="email" autoComplete="username" value={loginEmail} onChange={(event) => setLoginEmail(event.target.value)} required /></label>
+            <label>Password<input type="password" autoComplete="current-password" value={loginPassword} onChange={(event) => setLoginPassword(event.target.value)} required /></label>
+            {requestError && <p className="login-error" role="alert">{requestError}</p>}
+            <button className="primary-btn" type="submit" disabled={loginLoading}>{loginLoading ? 'Signing in…' : 'Sign in'}</button>
+          </form>
+          <p className="demo-hint">Demo account: <span>admin@school.com</span> / <span>admin123</span></p>
+        </section>
+      </main>
     );
   }
 
@@ -671,35 +682,50 @@ function App() {
               <div className="filter-heading">
                 <div>
                   <h2 id="filter-title">Academic filters</h2>
-                  <p id="filter-catalog-note">Catalog options will be available when academic setup is connected.</p>
+                  <p id="filter-catalog-note">Filter the overview using the academic records in your account.</p>
                 </div>
-                <Building2 size={19} aria-hidden="true" />
+                <button type="button" className="filter-reset-btn" onClick={() => setAcademicFilters(emptyAcademicFilters)}>Clear filters</button>
               </div>
               <div className="filter-grid">
-                {academicFilters.map((label) => <FilterField key={label} label={label} />)}
+                {[
+                  ['Class', 'className'],
+                  ['Session', 'session'],
+                  ['Subject', 'subject'],
+                  ['Grade', 'grade'],
+                  ['Attendance', 'attendance'],
+                  ['Student status', 'status'],
+                ].map(([label, key]) => (
+                  <FilterField
+                    key={key}
+                    label={label}
+                    value={academicFilters[key]}
+                    options={filterOptions[key]}
+                    onChange={(event) => setAcademicFilters((current) => ({ ...current, [key]: event.target.value }))}
+                  />
+                ))}
               </div>
             </section>
 
             <section className="stats-grid">
               <div className="stat-card accent">
                 <div className="stat-heading"><span>Total Students</span><i><Icon name="users" /></i></div>
-                <strong>{loading ? '...' : dashboard.students}</strong>
-                <small>Enrolled learners</small>
+                <strong>{loading ? '...' : academicStudents.length}</strong>
+                <small>Matching enrolled learners</small>
               </div>
               <div className="stat-card success">
                 <div className="stat-heading"><span>Teaching Staff</span><i><Icon name="teacher" /></i></div>
-                <strong>{loading ? '...' : dashboard.teachers}</strong>
-                <small>Registered teachers</small>
+                <strong>{loading ? '...' : academicTeachers.length}</strong>
+                <small>{academicFilters.subject ? `Teaching ${academicFilters.subject}` : 'Registered teachers'}</small>
               </div>
               <div className="stat-card warning">
                 <div className="stat-heading"><span>Attendance Rate</span><i><Icon name="check" /></i></div>
                 <strong>{loading ? '...' : `${attendancePercent}%`}</strong>
-                <small>{attendancePresent} present of {attendance.length} records</small>
+                <small>{attendancePresent} present of {academicAttendance.length} matching records</small>
               </div>
               <div className="stat-card dark">
                 <div className="stat-heading"><span>Average Score</span><i><Icon name="chart" /></i></div>
-                <strong>{loading ? '...' : `${dashboard.averageScore}%`}</strong>
-                <small>Across recorded results</small>
+                <strong>{loading ? '...' : `${academicAverageScore}%`}</strong>
+                <small>Across matching results</small>
               </div>
             </section>
 
@@ -714,7 +740,7 @@ function App() {
                     {classBreakdown.map(([className, count]) => (
                       <div className="class-row" key={className}>
                         <div className="class-row-label"><span>{className}</span><strong>{count}</strong></div>
-                        <div className="progress-track"><span style={{ width: `${Math.max(8, Math.round((count / students.length) * 100))}%` }} /></div>
+                        <div className="progress-track"><span style={{ width: `${Math.max(8, Math.round((count / academicStudents.length) * 100))}%` }} /></div>
                       </div>
                     ))}
                   </div>
@@ -729,7 +755,7 @@ function App() {
                   <i className="summary-icon"><Icon name="wallet" /></i>
                 </div>
                 <div className="finance-summary">
-                  <div><span>Collected</span><strong>৳ {Number(dashboard.totalCollection || 0).toLocaleString()}</strong></div>
+                  <div><span>Collected</span><strong>৳ {academicFees.reduce((sum, fee) => sum + fee.paid, 0).toLocaleString()}</strong></div>
                   <div><span>Outstanding</span><strong>৳ {dueFees.toLocaleString()}</strong></div>
                   <button type="button" className="text-button" onClick={() => setActiveTab('Fees')}>Open fee records <span aria-hidden="true">→</span></button>
                 </div>
