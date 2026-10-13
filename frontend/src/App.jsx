@@ -246,8 +246,8 @@ function App() {
   const [dashboard, setDashboard] = useState({ students: 0, teachers: 0, activeStudents: 0, presentToday: 0, totalCollection: 0, averageScore: 0 });
   const [token, setToken] = useState(() => sessionStorage.getItem('student-desk-token') || '');
   const [loading, setLoading] = useState(() => Boolean(sessionStorage.getItem('student-desk-token')));
-  const [loginEmail, setLoginEmail] = useState('admin@school.com');
-  const [loginPassword, setLoginPassword] = useState('123456');
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [form, setForm] = useState(initialForm);
@@ -642,7 +642,7 @@ function App() {
             {requestError && <p className="login-error" role="alert">{requestError}</p>}
             <button className="primary-btn" type="submit" disabled={loginLoading}>{loginLoading ? 'Signing in…' : 'Sign in'}</button>
           </form>
-          <p className="demo-hint">Demo account: <span>admin@school.com</span> / <span>123456</span></p>
+          <p className="demo-hint">Enter your account details to continue.</p>
         </section>
       </main>
     );
