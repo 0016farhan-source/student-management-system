@@ -17,7 +17,7 @@ import './App.css';
 import './Dashboard.css';
 import schoolHero from './assets/school-hero.jpg';
 
-const API_URL = (import.meta.env.VITE_API_URL || '/api').replace(/\/+$/, '');
+const API_URL = '/api';
 const CURRENT_YEAR = new Date().getFullYear();
 const singularLabels = {
   Overview: 'Student',
@@ -351,7 +351,7 @@ function App() {
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
         if (response.status === 404) {
-          throw new Error('API route not found (404). Set VITE_API_URL in Netlify to your backend address ending in /api, then redeploy.');
+          throw new Error('API function not found (404). Redeploy the latest version of this site so Netlify publishes its API function.');
         }
         throw new Error(data.message || `Sign in failed (HTTP ${response.status}). Check that the backend is running.`);
       }

@@ -1,4 +1,18 @@
 [build]
-  base = "frontend"
-  command = "npm run build"
-  publish = "dist"
+  base = "."
+  command = "npm --prefix backend install && npm --prefix frontend install && npm --prefix frontend run build"
+  publish = "frontend/dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+[functions]
+  directory = "backend/netlify/functions"
+  node_bundler = "esbuild"
+  external_node_modules = ["express", "serverless-http", "cors", "bcryptjs", "jsonwebtoken", "dotenv"]
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+  force = true

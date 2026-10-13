@@ -12,7 +12,7 @@ npm install
 npm start
 ```
 
-The API listens on `http://localhost:5000`. Opening that URL should return a small JSON message confirming the server is running.
+The API listens on `http://localhost:5000`.
 
 **Terminal 2 — web app**
 
@@ -22,22 +22,22 @@ npm install
 npm run dev
 ```
 
-Open the `Local` URL Vite prints (usually `http://localhost:5173`). If that port is busy, Vite prints another port; use that URL instead.
+Open the `Local` URL Vite prints (usually `http://localhost:5173`). If that port is busy, use the alternate URL Vite prints.
 
 ## Demo sign in
 
 - Email: `admin@school.com`
 - Password: `123456`
 
-The API currently keeps its demo records in memory. Records reset when the API server restarts. MySQL settings in `backend/.env` are not required for this demo API.
+The API currently keeps demo records in memory. Records reset when the API process restarts. MySQL settings in `backend/.env` are not required for this demo API.
 
-## Deploy frontend to Netlify and API to Render
+## Deploy to Netlify
 
-Netlify hosts the frontend; the Express API needs its own public Node web service. This repository includes `render.yaml` for deploying the API to Render and `netlify.toml` for the frontend build settings.
+The frontend and Express API both deploy to the same Netlify site. Netlify Functions serves the API, and `/api/*` is routed to that function by `netlify.toml`; no separate API host or `VITE_API_URL` is needed.
 
-1. In Render, create a Blueprint from this repository and deploy the `student-management-api` service from `render.yaml`. Wait for its public `onrender.com` URL.
-2. In Netlify, open **Project configuration → Environment variables** and add `VITE_API_URL` with the value `https://YOUR-API.onrender.com/api` (replace the host with the Render service URL).
-3. Trigger a new Netlify deploy so Vite includes the API URL in the built frontend.
-4. Confirm `https://YOUR-API.onrender.com/` returns the API-running message, then try the Netlify login again.
+1. Connect this GitHub repository to Netlify and use the repository root as the base directory. The build command and publish directory are already in `netlify.toml`.
+2. In Netlify **Project configuration → Environment variables**, set `JWT_SECRET` to a private random value. Do not commit this value.
+3. Deploy the latest `master` branch. Wait for the deploy to finish, then open `https://YOUR-SITE.netlify.app/api/health`; it should return an API-running JSON message.
+4. Sign in with `admin@school.com` and `123456`, or choose **Use demo account** on the login form.
 
-The API demo store is in memory, so its records reset when Render restarts or redeploys the service. The login API also needs `JWT_SECRET`, which the Render Blueprint generates for the service.
+Netlify Functions run the existing Express routes on demand. Demo records are kept in memory and may reset between function instances or redeploys; persistent school records need a hosted database.

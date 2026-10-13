@@ -18,6 +18,10 @@ app.get('/', (req, res) => {
   res.json({ message: 'Student Management System API is running' });
 });
 
+app.get('/api/health', (req, res) => {
+  res.json({ message: 'Student Management System API is running' });
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/api/teachers', teacherRoutes);
